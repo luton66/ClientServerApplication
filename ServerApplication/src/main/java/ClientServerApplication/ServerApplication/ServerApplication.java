@@ -1,44 +1,40 @@
 package ClientServerApplication.ServerApplication;
 
+import ClientServerApplication.ServerApplication.service.ClientConnectionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
+/**
+ * Main Class for ServerApplication.
+ *
+ * @author Leigh Edwards
+ */
 @SpringBootApplication
 public class ServerApplication {
 
-	public static void main(String[] args) throws IOException {
-		SpringApplication.run(ServerApplication.class, args);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ServerApplication.class);
 
-//		Want to investigate this. The use of Files.walk seems to be a recursive action, that will
-//		get the details of all files in all folders.
-//		Stream<Path> walk = Files.walk(Paths.get("C:\\Gradle"));
-//		Stream<Path> walk2 = walk.filter(Files::isRegularFile);
-//		List<String> result = walk2.map(Object::toString).collect(Collectors.toList());
+	private static ClientConnectionService connectionService;
 
-		File directory = new File(".");
-
-		System.out.println("Current Directory : " + directory.getCanonicalFile().getName() + "\n");
-
-		List<File> files = Arrays.asList(directory.listFiles());
-
-		System.out.println("Simply listing the files as files.toString will result in");
-		files.forEach(file -> System.out.println(file.toString()));
-
-		System.out.println("\nHowever, if we want to remove the .\\ Then we need to use the CanonicalFile details, as such.");
-		files.forEach(file -> {
-			try {
-				System.out.println(file.getCanonicalFile().getName());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
-
-		String x = "x";
+	/**
+	 * Basic constructor to take in the ClientConnectionService class.
+	 *
+	 * @param service the ClientConnectionService
+	 */
+	@Autowired
+	public ServerApplication (final ClientConnectionService service) {
+		this.connectionService = service;
 	}
 
+	public static void main(String[] args) throws IOException {
+		SpringApplication.run(ServerApplication.class, args);
+		LOGGER.info("application starting...");
+
+		connectionService.startServer();
+	}
 }
