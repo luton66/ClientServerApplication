@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -39,15 +40,55 @@ public class ClientConfiguration {
         }
         catch (IOException ioe) {
             LOGGER.error("Unable to establish new Client Socket {}", SOCKET_PORT, ioe.getCause());
-
+            //After logging error throw exception as fail-fast is acceptable in this circumstance.
             throw ioe;
         }
     }
 
     /**
-     * Configure command line scanner to take in input from command line
+     * Configure the PrintStream to be used to output commands to the Server
      *
-     * @return a scanner
+     * @param socket the configured Socket to connect to the server
+     * @return a bean of a PrintStream
+     * @throws IOException
+     */
+    @Bean
+    public PrintStream configurePrintStream(final Socket socket) throws IOException {
+        try {
+            PrintStream printStream = new PrintStream(socket.getOutputStream());
+
+            return printStream;
+        } catch (IOException ioe) {
+            LOGGER.error("Unable to establish an Output Stream with Socket: {}", socket.toString());
+            //After logging error throw exception as fail-fast is acceptable in this circumstance.
+            throw ioe;
+        }
+    }
+
+    /**
+     * Configure a Scanner object to be used to read responses from the Server
+     *
+     * @param socket the configured Socket to connect to the server
+     * @return a bean of a Scanner qualified as a response scanner
+     * @throws IOException
+     */
+    @Qualifier("responseScanner")
+    @Bean
+    public Scanner configureResponseScanner(final Socket socket) throws IOException {
+        try {
+            Scanner responseScanner = new Scanner(socket.getInputStream());
+            return responseScanner;
+        } catch (IOException ioe) {
+            LOGGER.error("Unable to establish an Input Stream with Socket: {}", socket.toString());
+            //After logging error throw exception as fail-fast is acceptable in this circumstance.
+            throw ioe;
+        }
+    }
+
+    /**
+     * Configure Scanner object to be used to read in commands entered in to the command line by the user
+     *
+     * @return a bean of a Scanner qualified as a line scanner
      */
     @Qualifier("lineScanner")
     @Bean

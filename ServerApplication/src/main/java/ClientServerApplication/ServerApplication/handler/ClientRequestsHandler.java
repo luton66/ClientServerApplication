@@ -2,68 +2,110 @@ package ClientServerApplication.ServerApplication.handler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class ClientRequestsHandler implements Runnable {
     private final static Logger LOGGER = LoggerFactory.getLogger(ClientRequestsHandler.class);
 
     private static final String START_DIRECTORY = ".";
     private static final String CLIENT_DIVIDER = "-";
+    private static final String DELIMETER = ";";
 
     private Socket clientSocket;
     private List<String> clientList;
+    private File currentDirectory;
 
     public ClientRequestsHandler(final Socket clientSocket, final List<String> clientList) {
         this.clientSocket = clientSocket;
         this.clientList = clientList;
+
+        this.currentDirectory = new File(START_DIRECTORY);
     }
 
     @Override
     public void run() {
-        while (true) {
-            String clientName = clientSocket.getInetAddress().getHostName() + CLIENT_DIVIDER + clientSocket.getPort();
+        System.out.println(currentDirectory.listFiles());
 
-            clientList.add(clientName);
-            LOGGER.info("Socket connection established for client: {}", clientName);
+        String clientName = clientSocket.getInetAddress().getHostName() + CLIENT_DIVIDER + clientSocket.getPort();
+        clientList.add(clientName);
+        boolean quitCommandReceived = false;
+        Scanner inputScanner = null;
+        PrintStream printStream = null;
 
-            try {
-                Scanner inputScanner = new Scanner(clientSocket.getInputStream());
+        try {
+            inputScanner = new Scanner(clientSocket.getInputStream());
+            printStream = new PrintStream(clientSocket.getOutputStream());
+        }
+        catch(IOException ioe) {
+            LOGGER.error("ERROR!");
+        }
 
-                if (inputScanner.nextLine().equals("leigh")) {
-                    PrintStream pr = new PrintStream(clientSocket.getOutputStream());
-                    pr.println("Feck you, loser");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+        LOGGER.info("Socket connection established for client: {}", clientName);
+
+        while (!quitCommandReceived) {
+            String[] inputCommand = inputScanner.nextLine().split(" ");
+
+            switch (inputCommand[0]) {
+            case "ls":
+                printStream.println(this.listFiles());
+                break;
+            case "cd":
+                printStream.println(this.changeDirectory(inputCommand));
+                break;
+            case "quit":
+                clientList.remove(clientName);
+                quitCommandReceived = true;
             }
         }
     }
-}
 
-//		File directory = new File(START_DIRECTORY);
-//
-//		System.out.println("Current Directory : " + directory.getCanonicalFile().getName() + "\n");
-//
-//		List<File> files = Arrays.asList(directory.listFiles());
-//
-//		System.out.println("Simply listing the files as files.toString will result in");
-//		files.forEach(file -> System.out.println(file.toString()));
-//
-//		System.out.println("\nHowever, if we want to remove the .\\ Then we need to use the CanonicalFile details, as such.");
-//		files.forEach(file -> {
-//			try {
-//				System.out.println(file.getCanonicalFile().getName());
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		});
-//
-//		String x = "x";
-//	}
-//
-//}
+    private String listFiles() {
+        List<File> files = Arrays.asList(currentDirectory.listFiles());
+
+        if (!CollectionUtils.isEmpty(files)) {
+            List<String> fileList = files.stream().map(file -> {
+                try {
+                    return file.getCanonicalFile().getName();
+                } catch (IOException ioe) {
+                    LOGGER.error("Error in retrieving filenames of directory.");
+                    return null;
+                }
+            }).collect(Collectors.toList());
+
+            return String.join(DELIMETER, fileList);
+        }
+
+        return null;
+    }
+
+    private String changeDirectory(String[] inputCommand) {
+        if (inputCommand.length == 1) {
+            return "Change Directory command requires 1 argument.";
+        }
+
+        File file = new File(currentDirectory + "/" + inputCommand[1]);
+        if (file.exists()) {
+            currentDirectory = file;
+            try {
+                return currentDirectory.getCanonicalFile().getName();
+            }
+            catch (IOException ioe) {
+                LOGGER.error("Error retrieving canonical filename for directory");
+                return "Error received changing directory";
+            }
+        }
+        else {
+            return "Directory requested - " + inputCommand[1] + " - does not exist";
+        }
+    }
+
+}
