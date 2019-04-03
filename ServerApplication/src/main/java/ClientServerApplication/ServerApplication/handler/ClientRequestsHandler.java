@@ -13,6 +13,11 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
+/**
+ * A class to handle the requests provided by an established connection to a client.
+ *
+ * @author Leigh Edwards
+ */
 public class ClientRequestsHandler implements Runnable {
     private final static Logger LOGGER = LoggerFactory.getLogger(ClientRequestsHandler.class);
 
@@ -24,6 +29,12 @@ public class ClientRequestsHandler implements Runnable {
     private List<String> clientList;
     private File currentDirectory;
 
+    /**
+     * Basic constuctor for ClientRequestHandler
+     *
+     * @param clientSocket a configured clientSocket
+     * @param clientList a Synchronised List to establish the number of clients connected
+     */
     public ClientRequestsHandler(final Socket clientSocket, final List<String> clientList) {
         this.clientSocket = clientSocket;
         this.clientList = clientList;
@@ -54,7 +65,7 @@ public class ClientRequestsHandler implements Runnable {
         while (!quitCommandReceived) {
             String[] inputCommand = inputScanner.nextLine().split(" ");
 
-            switch (inputCommand[0]) {
+            switch (inputCommand[0].toLowerCase()) {
             case "ls":
                 printStream.println(this.listFiles());
                 break;
@@ -68,6 +79,11 @@ public class ClientRequestsHandler implements Runnable {
         }
     }
 
+    /**
+     * Method to establish a list of files in the current directory and return to the user.
+     *
+     * @return a list of files in delimitted string form.
+     */
     private String listFiles() {
         List<File> files = Arrays.asList(currentDirectory.listFiles());
 
@@ -87,6 +103,12 @@ public class ClientRequestsHandler implements Runnable {
         return null;
     }
 
+    /**
+     * A Method to handle a change directory request received from a user
+     *
+     * @param inputCommand the requested directory by the user
+     * @return a String response of either a successful or unsuccessful attempt
+     */
     private String changeDirectory(String[] inputCommand) {
         if (inputCommand.length == 1) {
             return "Change Directory command requires 1 argument.";
@@ -94,12 +116,11 @@ public class ClientRequestsHandler implements Runnable {
 
         File file = new File(currentDirectory + "/" + inputCommand[1]);
         if (file.exists()) {
-            currentDirectory = file;
             try {
-                return currentDirectory.getCanonicalFile().getName();
-            }
-            catch (IOException ioe) {
-                LOGGER.error("Error retrieving canonical filename for directory");
+                currentDirectory = new File(file.getCanonicalPath());
+                return currentDirectory.getCanonicalPath();
+            } catch (IOException e) {
+                LOGGER.error("Error received changing directory");
                 return "Error received changing directory";
             }
         }

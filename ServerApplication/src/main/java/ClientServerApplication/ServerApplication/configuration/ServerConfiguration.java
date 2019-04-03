@@ -8,6 +8,11 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.net.ServerSocket;
 
+/**
+ * Configuration class for Server Application
+ *
+ * @author Leigh Edwards
+ */
 @Configuration
 public class ServerConfiguration {
 
