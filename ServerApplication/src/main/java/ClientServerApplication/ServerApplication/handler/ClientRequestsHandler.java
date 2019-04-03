@@ -3,8 +3,11 @@ package ClientServerApplication.ServerApplication.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.util.List;
+import java.util.Scanner;
 
 public class ClientRequestsHandler implements Runnable {
     private final static Logger LOGGER = LoggerFactory.getLogger(ClientRequestsHandler.class);
@@ -22,12 +25,23 @@ public class ClientRequestsHandler implements Runnable {
 
     @Override
     public void run() {
-        String clientName = clientSocket.getInetAddress().getHostName() + CLIENT_DIVIDER + clientSocket.getPort();
+        while (true) {
+            String clientName = clientSocket.getInetAddress().getHostName() + CLIENT_DIVIDER + clientSocket.getPort();
 
-        clientList.add(clientName);
-        LOGGER.info("Socket connection established for client: {}", clientName);
+            clientList.add(clientName);
+            LOGGER.info("Socket connection established for client: {}", clientName);
 
+            try {
+                Scanner inputScanner = new Scanner(clientSocket.getInputStream());
 
+                if (inputScanner.nextLine().equals("leigh")) {
+                    PrintStream pr = new PrintStream(clientSocket.getOutputStream());
+                    pr.println("Feck you, loser");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 

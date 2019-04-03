@@ -40,7 +40,6 @@ public class ClientConfiguration {
         catch (IOException ioe) {
             LOGGER.error("Unable to establish new Client Socket {}", SOCKET_PORT, ioe.getCause());
 
-            //After logging error details, throw error as fail-fast is suitable response to failing socket configuration
             throw ioe;
         }
     }
